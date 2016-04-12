@@ -15,7 +15,8 @@
     "**/.*",
     "node_modules",
     "bower_components",
-    "tests.*"
+    "tests.*",
+    "build_doc"
   ],
   "devDependencies": {
     "chai": "^3.5.0",

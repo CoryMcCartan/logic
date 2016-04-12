@@ -4,5 +4,8 @@
   "description": "Prolog-like logic library, with improved syntax.",
   "main": "logic.js",
   "author": "Cory McCartan",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+      "documentation": "^3.0.4"
+  }
 }

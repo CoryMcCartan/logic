@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+documentation build -f md -o API.md
+

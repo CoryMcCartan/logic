@@ -13,6 +13,7 @@ Or you can download `logic.js` above.
 
 ## Basic Usage
 
+### Data Types
 LJS works with *terms* and *variables*.  Terms are just normal JavaScript
 objects with some extra, hidden, LJS parameters attached.  They are used to
 represent things and relationships.  Things are represented by simple terms.
@@ -41,6 +42,7 @@ terms(
 );
 ```
 
+### Queries
 Once we've defined our facts, we can ask LJS questions about them, using the
 `query` function:
 ```javascript
@@ -74,7 +76,7 @@ for (let solution of answer) {
 }
 ``` 
 
-
+### Rules
 The real power of LJS becomes available when we start to define rules.  Rules 
 allow us to determine new relationships based on currently defined facts.  For 
 example:
@@ -113,6 +115,6 @@ can do the following:
 +is(socrates)("mortal"); // 1
 ```
 
-
+## More Information
 More detailed notes on the usage of all the functions of LJS can be found in the
-API.
+[API](API.md).
