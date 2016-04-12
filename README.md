@@ -97,7 +97,7 @@ let answer = query(
 );
 
 for (let solution of answer) {
-    solution.substitute.toString(); // "Socrates is mortal"
+    solution.substitute().toString(); // "Socrates is mortal"
 }
 ```
 The `given` function returns an object with `and` and `then` methods.  The `and`
