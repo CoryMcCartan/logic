@@ -432,12 +432,18 @@
             have: function(label) {
                 let compound = makeCompoundTerm("has ", term, label)();
 
-                return function(...new_args) {
+                let f = function(...new_args) {
                     new_args = new_args.map(ensureValid); // make sure all good
                     compound[_args].push(...new_args);
                     let answer = [...query(compound)];
                     return answer.length > 0;
                 };
+                // add coercion for incomplete objects
+                f[Symbol.toPrimitive] = function() {
+                    return f() ? 1 : 0;
+                };
+
+                return f;
             },
         };
     };
@@ -446,12 +452,18 @@
         return function(label) {
             let compound = makeCompoundTerm("is ", term, label)();
 
-            return function(...new_args) {
+            let f = function(...new_args) {
                 new_args = new_args.map(ensureValid); // make sure all good
                 compound[_args].push(...new_args);
                 let answer = [...query(compound)];
                 return answer.length > 0;
             };
+            // add coercion for incomplete objects
+            f[Symbol.toPrimitive] = function() {
+                return f() ? 1 : 0;
+            };
+
+            return f;
         };
     };
 

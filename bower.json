@@ -1,0 +1,24 @@
+{
+  "name": "ljs",
+  "description": "Prolog-like logic library, with improved syntax.",
+  "main": "logic.js",
+  "authors": [
+    "Cory McCartan"
+  ],
+  "license": "ISC",
+  "keywords": [
+    "logic",
+    "prolog"
+  ],
+  "homepage": "https://github.com/CoryMcCartan/logic",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "tests.*"
+  ],
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "mocha": "^2.4.5"
+  }
+}

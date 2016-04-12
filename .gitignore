@@ -1,5 +1,6 @@
 bower_components
 node_modules
+wam
 .DS_Store
 *.tmp
 *.swp
