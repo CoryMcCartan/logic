@@ -1,0 +1,10 @@
+variables stored on HEAP.  HEAP_PTR points to beginning of free memory.
+
+Variables take up one cell.  First part of cell stores enum of type (REF),
+second stores pointer to the cell itself (or first instance of this variable,
+in the case of repeats).
+
+Structures take up n+2 cells.  First cell is like a variable cell, with tag
+(STR) and pointer to the 'functor cell'.  The functor cell stores the
+representation of the functor, which is the unique ID of the struct, and its
+arity.  Immediately following the functor cell are n cells 

@@ -1,0 +1,22 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TESTING</title>
+
+    <link rel="stylesheet" type="text/css" href="bower_components/mocha/mocha.css">
+</head>
+<body>
+    <!-- Test results here -->
+    <div id="mocha" style="font-family: monospace;"></div> 
+
+    <script src="bower_components/chai/chai.js" type="text/javascript" charset="utf-8"></script>
+    <script src="bower_components/mocha/mocha.js" type="text/javascript" charset="utf-8"></script>
+    <script type="text/javascript" charset="utf-8"> mocha.setup("bdd"); </script>
+    <script src="new_logic.js" type="text/javascript" charset="utf-8"></script> 
+    <script src="testing.js" type="text/javascript" charset="utf-8"></script>
+    <script type="text/javascript" charset="utf-8"> mocha.run(); </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "name": "logic",
+  "version": "1.0.0",
+  "description": "Logic library, using Warren Abstract Machine.",
+  "main": "new_logic.js",
+  "scripts": {
+    "test": "node testing.js"
+  },
+  "author": "Cory McCartan",
+  "license": "ISC"
+}
