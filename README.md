@@ -33,9 +33,9 @@ Simple terms are created using the `T` function.  Compound terms are created by
 calling the `has` and `is` methods on a term.
 
 But simply delcaring terms is not enough.  We have to tell LJS that these
-relationships are facts.  We do so by passing them to the `terms` function:
+relationships are facts.  We do so by passing them to the `facts` function:
 ```javascript
-terms(
+facts(
     socrates.is("human"),
     plato.is("human"),
     plato.has("teacher")(socrates)
@@ -84,7 +84,7 @@ example:
 let socrates = T("Socrates");
 let X = V("X");
 
-terms(
+facts(
     socrates.is("human")
 );
 
@@ -113,6 +113,7 @@ can do the following:
 ```javascript
 +does(plato).have("teacher")(socrates); // 1
 +is(socrates)("mortal"); // 1
++is(socrates)("immortal"); // 0
 ```
 
 ## Global Configuration
