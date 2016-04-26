@@ -14,9 +14,14 @@
 
     <script src="bower_components/chai/chai.js" type="text/javascript" charset="utf-8"></script>
     <script src="bower_components/mocha/mocha.js" type="text/javascript" charset="utf-8"></script>
-    <script type="text/javascript" charset="utf-8"> mocha.setup("bdd"); </script>
+    <script type="text/javascript" charset="utf-8"> 
+        mocha.setup("bdd"); 
+        _LOGIC_JS_TESTING = true;
+    </script>
     <script src="logic.js" type="text/javascript" charset="utf-8"></script> 
     <script src="tests.js" type="text/javascript" charset="utf-8"></script>
-    <script type="text/javascript" charset="utf-8"> mocha.run(); </script>
+    <script type="text/javascript" charset="utf-8"> 
+        mocha.run(); 
+    </script>
 </body>
 </html>

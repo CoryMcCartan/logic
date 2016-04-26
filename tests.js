@@ -73,28 +73,28 @@ describe("logic", function() {
         });
     }); 
 
-    describe("terms()", function() {
+    describe("facts()", function() {
         it("should take terms as arguments", function() {
             let t1 = T("1");
             let t2 = T("2");
             let r = t1.has("rel to")(t2);
 
-            let p = terms(t1, t2, r); 
-            p.should.be.an("array");
-            p.should.not.be.empty;
-            p.should.deep.equal([t1, t2, r]);
+            let p = facts(t1, t2, r); 
+            p.should.be.a("Set");
+            p.size.should.equal(3);
+            p.should.deep.equal(new Set([t1, t2, r]));
         });
         it("should convert partially completed terms to full terms", function() {
             let t = T(1);
             let r = t.is("thing");
             r.should.be.a("function");
 
-            let p = terms(r);
-            p[0].should.be.an("object");
+            let p = facts(r);
+            p.has(r()).should.be.true;
         });
         it("should throw an error for invalid terms", function() {
             let badTerm = 3.1415926535;
-            let test = terms.bind(null, badTerm);  
+            let test = facts.bind(null, badTerm);  
 
             test.should.throw(Error);
         });
@@ -105,7 +105,7 @@ describe("logic", function() {
             let t1 = T(1);
             let t2 = T(2);
 
-            terms(
+            facts(
                 (t1).has("rel to")(t2)
             );
 
@@ -119,7 +119,7 @@ describe("logic", function() {
             let t1 = T(1);
             let t2 = T(2);
 
-            terms(
+            facts(
                 (t1).has("rel to")(t2)
             );
 
@@ -144,7 +144,7 @@ describe("logic", function() {
             let t2 = T(2);
             let X = V("X");
 
-            terms(
+            facts(
                 (t1).has("rel to")(t2)
             );
 
@@ -170,7 +170,7 @@ describe("logic", function() {
             let t2 = T(2);
             let X = V("X");
 
-            terms(
+            facts(
                 (t1).has("rel to")(t2)
             );
 
@@ -190,7 +190,7 @@ describe("logic", function() {
             let X = V("X");
             let Y = V("X");
 
-            terms(
+            facts(
                 (t1).has("rel to")(t2),
                 (t2).has("rel to")(t1)
             );
@@ -208,7 +208,7 @@ describe("logic", function() {
         });
         it("should allow partially completed terms", function() {
             let t = T();
-            terms(t.is("a thing"));
+            facts(t.is("a thing"));
 
             let answer = [...query(t.is("a thing"))];
 
@@ -231,7 +231,7 @@ describe("logic", function() {
 
             let X = V(), Y = V();
 
-            terms(
+            facts(
                 t1.is("child to")(t2)
             );
 
@@ -259,7 +259,7 @@ describe("logic", function() {
                 let X = V("X");
                 let Y = V("Y");
 
-                terms(
+                facts(
                     (robert).has("father")(john),
                     (robert).has("mother")(sue),
 
@@ -345,7 +345,7 @@ describe("logic", function() {
         it("should take partially completed terms", function() {
             let t = T();
             let X = V();
-            terms(t.is("a thing"));
+            facts(t.is("a thing"));
 
             let r1 = X.is("a thing");
             let r2 = X.has("thing-ness");
@@ -363,6 +363,31 @@ describe("logic", function() {
             // result[_body].should.deep.equal([r1()]);
             result[_id].should.equal(r2()[_id]);
         });
+        it("should allow for multiple conclusions", function() {
+            let robert = T("robert");
+            let john = T("john");
+            let jane = T("jane");
+            let X = V("X"), Y = V("Y"), Z = V("Z");
+
+            facts(
+                robert.has("father")(john),
+                robert.has("mother")(jane)
+            );
+
+            given(
+                X.has("father")(Y),
+                X.has("mother")(Z)
+            ).then(
+                Y.is("married to")(Z),
+                Z.is("married to")(Y)
+            );
+
+            let answer1 = is(jane)("married to")(john);
+            let answer2 = is(john)("married to")(jane);
+
+            answer1.should.be.true;
+            answer2.should.be.true;
+        })
     });
 
     describe("is()", function() {
@@ -370,12 +395,22 @@ describe("logic", function() {
             let t = T(1);
             let r = t.is("a thing");
 
-            terms(r);
+            facts(r);
 
             let q = is(t)("a thing")();
 
             q.should.be.true;
         });
+        it("should work with negation", function() {
+            let t = T(1);
+            let r = t.is("a thing");
+
+            facts(r);
+
+            let q = is(t).not("a thing")();
+
+            q.should.be.false;
+        })
     });
     describe("does()", function() {
         it("should return an object with a have() method", function() {
@@ -390,13 +425,26 @@ describe("logic", function() {
             let t2 = T(2);
             let r = t1.has("rel to")(t2);
 
-            terms(r);
+            facts(r);
 
             let q1 = does(t1).have("rel to")(t2);
             let q2 = does(t2).have("rel to")(t1);
 
             q1.should.be.true;
             q2.should.be.false;
+        });
+        it("should work with negation", function() {
+            let t1 = T(1);
+            let t2 = T(2);
+            let r = t1.has("rel to")(t2);
+
+            facts(r);
+
+            let q1 = does(t1).not.have("rel to")(t2);
+            let q2 = does(t2).not.have("rel to")(t1);
+
+            q1.should.be.false;
+            q2.should.be.true;
         });
     });
 });

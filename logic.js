@@ -7,8 +7,17 @@
 "use strict";
 
 (function() {
+    // figure out the root object -- window if in browser, global if server, etc.
+    let root = typeof self == 'object' && self.self === self && self ||
+        typeof global == 'object' && global.global === global && global ||
+        this;
 
-    let database = [];
+    if (root._LOGIC_JS_NAMESPACE !== undefined) {
+        root = root[_LOGIC_JS_NAMESPACE] = {};
+    }
+
+
+    let database = new Set();
     let termID = 0;
 
     // symbols for special properties
@@ -17,6 +26,7 @@
     const _type = Symbol("type");
     const _args = Symbol("args");
     const _body = Symbol("body");
+    const _not = Symbol("not");
     const $match = Symbol("match()");
     const $substitute = Symbol("substitute()");
     const $query = Symbol("query()");
@@ -69,21 +79,22 @@
      *
      * @example
      * <caption>
-     *   The function returns the constructed term, which has two methods
-     *   attached to create compound terms.  The methods, has() and is(),
-     *   operate the same way.  If the object passed to this constructor
-     *   already has properties 'has' and 'is,' they will be backed up to
-     *   '_has' and '_is.' Compound terms are created by calling either has()
-     *   or is() with an identifier.  Further terms can be appedned to the end
-     *   as well.
+     *   The function returns the constructed term, which has three methods
+     *   attached to create compound terms.  The methods, has(), is(), does(),
+     *   all operate the same way.  If the
+     *   object passed to this constructor already has any of these properties,
+     *   they will be backed up to '_has' or '_is,' or etc. Compound terms are
+     *   created by calling either method with an identifier.  Further terms
+     *   can be appedned to the end as well.
      * </caption>
      * let john = T("john");
      * let robert = T("robert");
      *
      * john.is("a person");
      * robert.has("father")(john);
+     * robert.is.not("a father");
      */
-    window.T = function(arg1, arg2) {
+    root.T = function(arg1, arg2) {
         let obj, id;
         // nothing passed, use number as ID and make empty object
         if (!arg1) { 
@@ -97,6 +108,8 @@
                 obj._is = obj.is;
             if ("has" in obj)
                 obj._has = obj.has;
+            if ("does" in obj) 
+                obj._does = obj.does;
 
             // use label if passed, otherwise use generic ID
             id = arg2 || termID++; 
@@ -109,11 +122,16 @@
         obj[_id] = id;
         obj[_type] = TERM;
         obj[_args] = []; // no args for basic term
+        obj[_not] = false; // don't negate
         obj[$match] = term_match.bind(obj);
         obj[$substitute] = term_substitute.bind(obj);
         // helper functions to create compound terms
-        obj.has = makeCompoundTerm.bind(null, "has ", obj); 
-        obj.is = makeCompoundTerm.bind(null, "is ", obj);
+        obj.has = makeCompoundTerm.bind(null, "has ", obj, false); 
+        obj.is = makeCompoundTerm.bind(null, "is ", obj, false);
+        obj.does = makeCompoundTerm.bind(null, "does ", obj, false);
+        obj.does.not = makeCompoundTerm.bind(null, "does ", obj, true); 
+        obj.does.not.have = makeCompoundTerm.bind(null, "has ", obj, true); 
+        obj.is.not = makeCompoundTerm.bind(null, "is ", obj, true);
         // and toString function
         obj.toString = term_toString.bind(obj);
 
@@ -158,7 +176,7 @@
 
 
     // makes a function to generate compound terms
-    let makeCompoundTerm = function(joiner, caller, label) {
+    let makeCompoundTerm = function(joiner, caller, negate, label) {
         let id = joiner + label;
         caller = ensureValid(caller);
 
@@ -168,6 +186,7 @@
             [_args]: caller ? [ // if no caller passed, then init empty array
                 caller,
             ] : [],
+            [_not]: negate,
             [$match]: term_match,
             [$substitute]: term_substitute,
             toString: term_toString,
@@ -191,7 +210,7 @@
      * This constructor operates in the same way as {@link T} above.  Compound
      * terms can be created in the same way as well.
      */
-    window.V = function(arg1, arg2) {
+    root.V = function(arg1, arg2) {
         let obj = self.T(arg1, arg2);
         obj[_type] = VARIABLE;
         // change match and substitute functions
@@ -222,11 +241,38 @@
     };
 
 
-    // register rules in DB TODO write doc
-    /*
-     * Registers a set of terms in the terms database.
+    /**
+     * Create and register a rule.
+     *
+     * @param {array} args a predicate or predicates for the rule.
+     * @returns {object} an object with then() and and() methods attached. Use
+     * and() to add further predicates, and then() to add the consclusions. 
+     * and() returns the same object, and then() registers the final rule in the
+     * database.
+     *
+     * @example
+     * <caption>
+     * let robert = T("robert");
+     * let john = T("john");
+     * let jane = T("jane");
+     * let X = V("X"), Y = V("Y"), Z = V("Z");
+
+     * facts(
+     *     robert.has("father")(john),
+     *     robert.has("mother")(jane)
+     * );
+
+     * given(
+     *     X.has("father")(Y)
+     * ).and(
+     *     X.has("mother")(Z)
+     * ).then(
+     *     Y.is("married to")(Z),
+     *     Z.is("married to")(Y)
+     * );
+     * </caption>
      */
-    window.given = function(...args) {
+    root.given = function(...args) {
         args = args.map(ensureValid);
         let predicates = [...args];
 
@@ -252,7 +298,7 @@
                             [$substitute]: term_substitute,
                         };
                         term.toString = rule_toString.bind(term);
-                        database.push(term);
+                        database.add(term);
                     }
 
                     return args;
@@ -267,7 +313,7 @@
                     };
                     term[$substitute] = rule_substitute.bind(term);
                     term.toString = rule_toString.bind(term);
-                    database.push(term);
+                    database.add(term);
 
                     return term;
                 }
@@ -317,26 +363,6 @@
         } else { // a variable, so bind it to this
             return other[$match](this);
         }
-    };
-
-    let conjunction_query_2 = function * (term) {
-        let bindings = new Map();
-
-        // for every subterm in conjunction
-        let length = term[_args].length;
-        for (let i = 0; i < length; i++) {
-            let arg = term[_args][i];
-            // for every match with this argument
-            for (let match of query(arg[$substitute](bindings)) ) { 
-                let unified = mergeBindings(match, bindings); 
-                // return if unable to merge bindings
-                if (unified) {
-                    bindings = unified;
-                }
-            }
-        }
-
-        yield bindings;
     };
 
     let conjunction_query = function * (term) {
@@ -396,16 +422,56 @@
             return merged;
     };
 
-    // register terms in DB TODO write doc
-    window.terms = function(...args) { // args should be an array of IDs
+    /*
+     * Registers a set of facts in the terms database.
+     * Any number of terms can be supplied.
+     * @param {array} args a term or a series of terms which LJS can take to be 
+     * true.
+     */
+    root.facts = function(...args) { // args should be an array of IDs
         // convert any unfinished compound terms builders in to proper terms
         args = args.map(ensureValid);
-        database.push(...args);
+        for (let arg of args) {
+            facts(...arg[_args]); // recursively add subterms as needed
+
+            database.add(arg);
+        }
 
         return database;
     };
 
-    window.query = function * (goal) {
+    /**
+     * Query the database.
+     * @param {Term} goal a term that is the query.
+     * @return {GeneratorFunction} a generator that yields Maps.  Each map
+     * contains bindings from variables in the query to actual, solved, values.
+     *
+     * @example
+     * let robert = T("robert");
+     * let john = T("john");
+     * let X = V("X");
+     *
+     * facts(
+     *     robert.has("father")(john)
+     * );
+     *
+     * for (let solution of query(X.has("father")(john)) ) {
+     *    solution instanceof Map; // true
+     *    solution.get(X) === robert; // true
+     * }
+     *
+     * @example
+     * <caption>
+     * Each solution has a substitute() method attached that returns the original
+     * goal, with variables substittued for their solved values. Using the above
+     * definitions:
+     * </caption>
+     * for (let solution of query(X.has("father")(john)) ) {
+     *     let answer = solution.substitute();
+     *     answer === robert.has("father")(john); // true
+     * }
+     */
+    root.query = function * (goal) {
         goal = ensureValid(goal); 
         // try matching to every saved term
         for (var term of database) { 
@@ -427,45 +493,62 @@
         } 
     };
 
-    window.does = function(term) {
+    root.does = function(term) {
         return {
-            have: function(label) {
-                let compound = makeCompoundTerm("has ", term, label)();
-
-                let f = function(...new_args) {
-                    new_args = new_args.map(ensureValid); // make sure all good
-                    compound[_args].push(...new_args);
-                    let answer = [...query(compound)];
-                    return answer.length > 0;
-                };
-                // add coercion for incomplete objects
-                f[Symbol.toPrimitive] = function() {
-                    return f() ? 1 : 0;
-                };
-
-                return f;
+            have: have_helper(term, false),
+            not: {
+                have: have_helper(term, true),
             },
         };
     };
 
-    window.is = function(term) {
-        return function(label) {
-            let compound = makeCompoundTerm("is ", term, label)();
+    let have_helper = function(term, negate) {
+       return function(label) {
+           let compound = makeCompoundTerm("has ", term, negate, label)();
+
+           let f = function(...new_args) {
+               new_args = new_args.map(ensureValid); // make sure all good
+               compound[_args].push(...new_args);
+               let answer = [...query(compound)];
+               return negate ? answer.length === 0 : answer.length > 0;
+           };
+           // add coercion for incomplete objects
+           f[Symbol.toPrimitive] = function() {
+               return f() ? 1 : 0;
+           };
+
+           return f;
+       };
+    };
+
+    root.is = function(term) {
+        return is_helper(term, false);
+    };
+
+    let is_helper = function(term, negate) {
+        let func = function(label) {
+            let compound = makeCompoundTerm("is ", term, negate, label)();
 
             let f = function(...new_args) {
                 new_args = new_args.map(ensureValid); // make sure all good
                 compound[_args].push(...new_args);
                 let answer = [...query(compound)];
-                return answer.length > 0;
+                return negate ? answer.length === 0 : answer.length > 0;
             };
             // add coercion for incomplete objects
             f[Symbol.toPrimitive] = function() {
                 return f() ? 1 : 0;
             };
 
+
             return f;
         };
-    };
+
+        if (!negate) 
+            func.not = is_helper(term, true);
+
+        return func;
+    }
 
 
     /*
@@ -506,20 +589,21 @@
     };
 
 
-    // TODO delete
-    window._db = database;
-    window.$s = $substitute;
-    window.$m = $match;
-    window._id = _id;
-    window._type = _type;
-    window._args = _args;
-    window._body = _body;
-    window._TRM = TERM;
-    window._VAR = VARIABLE
-    window._RUL = RULE;
-    window._CNJ = CONJUNCTION;
-    window.logic_reset = function() {
-        database = [];
-    };
-
+    if (root._LOGIC_JS_TESTING) {
+        root._db = database;
+        root.$s = $substitute;
+        root.$m = $match;
+        root._id = _id;
+        root._type = _type;
+        root._args = _args;
+        root._body = _body;
+        root._TRM = TERM;
+        root._VAR = VARIABLE
+        root._RUL = RULE;
+        root._CNJ = CONJUNCTION;
+        root.logic_reset = function() {
+            database = new Set();
+            root._db = database;
+        };
+    }
 })();

@@ -115,6 +115,21 @@ can do the following:
 +is(socrates)("mortal"); // 1
 ```
 
+## Global Configuration
+If you'd like all of the global varialbes to be hidden behind a namespace instead
+of polluting the global object, simply set the `_LOGIC_JS_NAMESPACE` variable 
+before you include LJS.  For example,
+```html
+    <script> 
+        _LOGIC_JS_NAMESPACE = "logic";
+    </script>
+    <script src="logic.js"></script> 
+    <script> 
+        window.T; // undefined
+        logic.T; // defined
+    </script>
+```
+
 ## More Information
 More detailed notes on the usage of all the functions of LJS can be found in the
 [API](API.md).
